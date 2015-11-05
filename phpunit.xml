@@ -13,8 +13,16 @@
     <testsuites>
         <testsuite name="Package Test Suite">
             <directory suffix=".php">./tests/</directory>
-			<exclude>./vendor/</exclude>
         </testsuite>
 
     </testsuites>
+
+	<filter>
+		<whitelist>
+			<directory suffix=".php">./src/</directory>
+			<exclude>
+				<directory suffix=".php">./vendor/</directory>
+			</exclude>
+		</whitelist>
+	</filter>
 </phpunit>
