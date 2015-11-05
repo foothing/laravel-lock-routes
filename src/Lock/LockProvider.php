@@ -49,6 +49,7 @@ class LockProvider extends AbstractProvider {
         } else if ( $this->subject == 'role' ) {
             return $this->getRolePermissions( $this->role );
         }
+        // @TODO: all permissions.
     }
 
     /**
