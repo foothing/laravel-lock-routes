@@ -25,6 +25,7 @@ class LockProviderTest extends \Orchestra\Testbench\TestCase {
 
 	protected function getPackageProviders($app) {
 		$app['config']->set('lock.driver', 'database');
+		$app['config']->set('lock.table', 'lock_permissions');
 		$app['config']->set('wrappr.permissionsProvider', 'Foothing\Wrappr\Lock\LockProvider');
 		$app['config']->set('wrappr.usersProvider', 'Foothing\Wrappr\Providers\Users\DefaultProvider');
 		return ['Foothing\Wrappr\WrapprServiceProvider', 'BeatSwitch\Lock\Integrations\Laravel\LockServiceProvider'];
@@ -42,47 +43,55 @@ class LockProviderTest extends \Orchestra\Testbench\TestCase {
 
     function test_grant_is_not_necessary() { }
 
-    function test_revoke_user() {
+    function testCheck() {
+        \Mockery::mock('BeatSwitch\Lock\Callers\CallerLock')->shouldReceive('can');
+        $this->provider->check(new User(), 'drink', 'beer', 1);
+    }
+
+    function testUserRevoke() {
+        \Mockery::mock('BeatSwitch\Lock\Callers\CallerLock')->shouldReceive('deny');
+        $this->provider->user(new User())->revoke('drink', 'beer', 1);
+    }
+
+    function testRoleRevoke() {
+        \Mockery::mock('BeatSwitch\Lock\Roles\RoleLock')->shouldReceive('deny');
+        $this->provider->user(new User())->revoke('drink', 'beer', 1);
+    }
+
+    function testUserCan() {
+        \Mockery::mock('BeatSwitch\Lock\Callers\CallerLock')->shouldReceive('can');
+        $this->provider->user(new User())->can('drink', 'beer', 1);
+    }
+
+    function testRoleCan() {
+        \Mockery::mock('BeatSwitch\Lock\Roles\RoleLock')->shouldReceive('can');
+        $this->provider->role('admin')->can('drink', 'beer', 1);
+    }
+
+    function testUserAll() {
         $user = new User();
         $this->provider->user($user)->revoke('drink', 'beer', 1);
         $this->provider->user($user)->grant('drink', 'beer', 1);
         $this->assertEquals(1, $this->provider->user($user)->all()->countAllowed());
-        $this->assertEquals(0, $this->provider->user($user)->all()->countDenied());
         $this->provider->user($user)->revoke('drink', 'beer', 1);
         $this->assertEquals(0, $this->provider->user($user)->all()->countAllowed());
-        $this->assertEquals(0, $this->provider->user($user)->all()->countDenied());
     }
 
-    function test_revoke_role() {
+    function testRoleAll() {
         $this->provider->role('admin')->revoke('drink', 'beer', 1);
         $this->provider->role('admin')->grant('drink', 'beer', 1);
         $this->assertEquals(1, $this->provider->role('admin')->all()->countAllowed());
-        $this->assertEquals(0, $this->provider->role('admin')->all()->countDenied());
         $this->provider->role('admin')->revoke('drink', 'beer', 1);
         $this->assertEquals(0, $this->provider->role('admin')->all()->countAllowed());
-        $this->assertEquals(0, $this->provider->role('admin')->all()->countDenied());
     }
 
-    function test_revoke_specific_resource() {
-        $user = new User();
-        $this->provider->user($user)->grant('drink', 'beer', 1);
-        $this->provider->user($user)->grant('drink', 'coffee');
-        $permissions = $this->provider->user($user)->all();
-        $this->assertEquals(2, $permissions->countAllowed());
-        $this->provider->user($user)->revoke('drink', 'beer', 1);
-        $this->provider->user($user)->revoke('drink', 'coffee');
-        $permissions = $this->provider->user($user)->all();
-        $this->assertEquals(1, $permissions->countDenied());
-    }
-
-    function test_user_all_returns_empty() {
+    function testUserAllReturnsEmpty() {
         $user = new User();
         $permissions = $this->provider->user($user)->all();
         $this->assertEquals(0, $permissions->countAllowed());
-        $this->assertEquals(0, $permissions->countDenied());
     }
 
-    function test_user_all_returns_allowed() {
+    function testUserAllReturnsAllowed() {
         $user = new User();
         $this->provider->user($user)->grant('drink', 'beer', 1);
         $this->provider->user($user)->grant('drink', 'coffee');
@@ -98,33 +107,12 @@ class LockProviderTest extends \Orchestra\Testbench\TestCase {
         $this->assertEquals('eat', $permissions->getAllowed(2)->name);
     }
 
-    function test_user_all_returns_denied() {
-        $user = new User();
-        $this->provider->user($user)->grant('drink', 'beer', 1);
-        $this->provider->user($user)->grant('drink', 'coffee');
-        $this->provider->user($user)->grant('eat');
-        $this->provider->user($user)->revoke('wakeup');
-        $permissions = $this->provider->user($user)->all();
-
-        $this->assertEquals(1, $permissions->countDenied());
-        $this->assertEquals('wakeup', $permissions->getDenied(0)->name);
-        $this->assertNull($permissions->getDenied(0)->resourceName);
-        $this->assertNull($permissions->getDenied(0)->resourceId);
-
-        $this->provider->user($user)->revoke('drink', 'beer', 1);
-        $this->provider->user($user)->revoke('drink', 'coffee');
-        $this->provider->user($user)->revoke('eat');
-        $permissions = $this->provider->user($user)->all();
-        $this->assertEquals(3, $permissions->countDenied());
-    }
-
-    function test_role_all_returns_empty() {
+    function testRoleAllReturnsEmpty() {
         $permissions = $this->provider->role('admin')->all();
         $this->assertEquals(0, $permissions->countAllowed());
-        $this->assertEquals(0, $permissions->countDenied());
     }
 
-    function test_role_all_returns_allowed() {
+    function testRoleAllReturnsAllowed() {
         $this->provider->role('admin')->grant('drink', 'beer', 1);
         $this->provider->role('admin')->grant('drink', 'coffee');
         $this->provider->role('admin')->grant('eat');
