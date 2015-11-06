@@ -7,7 +7,8 @@ use Foothing\Wrappr\Permissions\Collection;
 use Foothing\Wrappr\Permissions\Permission;
 use Foothing\Wrappr\Providers\Permissions\AbstractProvider;
 
-class LockProvider extends AbstractProvider {
+class LockProvider extends AbstractProvider
+{
     /**
      * @var \BeatSwitch\Lock\Manager
      */
@@ -30,9 +31,10 @@ class LockProvider extends AbstractProvider {
      */
     protected $role;
 
-	function __construct(Manager $manager) {
-		$this->manager = $manager;
-	}
+    public function __construct(Manager $manager)
+    {
+        $this->manager = $manager;
+    }
 
     /**
      * Check the given user has the given permission.
@@ -44,9 +46,10 @@ class LockProvider extends AbstractProvider {
      *
      * @return bool|mixed
      */
-    function check($user, $permissions, $resourceName = null, $resourceId = null) {
-		return $this->manager->caller($user)->can($permissions, $resourceName, (int)$resourceId);
-	}
+    public function check($user, $permissions, $resourceName = null, $resourceId = null)
+    {
+        return $this->manager->caller($user)->can($permissions, $resourceName, (int)$resourceId);
+    }
 
     /**
      * Perform check on the subject.
@@ -57,7 +60,8 @@ class LockProvider extends AbstractProvider {
      *
      * @return bool
      */
-    function can($permissions, $resourceName = null, $resourceId = null) {
+    public function can($permissions, $resourceName = null, $resourceId = null)
+    {
         return $this->caller()->can($permissions, $resourceName, $resourceId);
     }
 
@@ -66,7 +70,8 @@ class LockProvider extends AbstractProvider {
      * @param  $user
      * @return $this
      */
-    function user($user) {
+    public function user($user)
+    {
         $this->subject = 'user';
         $this->user = $user;
         return $this;
@@ -77,7 +82,8 @@ class LockProvider extends AbstractProvider {
      * @param  $role
      * @return $this
      */
-    function role($role) {
+    public function role($role)
+    {
         $this->subject = 'role';
         $this->role = $role;
         return $this;
@@ -88,10 +94,11 @@ class LockProvider extends AbstractProvider {
      *
      * @return mixed
      */
-    function all() {
+    public function all()
+    {
         if ( $this->subject == 'user' ) {
             return $this->getUserPermissions( $this->user );
-        } else if ( $this->subject == 'role' ) {
+        } elseif ( $this->subject == 'role' ) {
             return $this->getRolePermissions( $this->role );
         }
     }
@@ -105,7 +112,8 @@ class LockProvider extends AbstractProvider {
      *
      * @return mixed
      */
-    function grant($permissions, $resourceName = null, $resourceId = null) {
+    public function grant($permissions, $resourceName = null, $resourceId = null)
+    {
         return $this->lock()->allow($permissions, $resourceName, $resourceId);
     }
 
@@ -118,7 +126,8 @@ class LockProvider extends AbstractProvider {
      *
      * @return mixed
      */
-    function revoke($permissions, $resourceName = null, $resourceId = null) {
+    public function revoke($permissions, $resourceName = null, $resourceId = null)
+    {
         return $this->lock()->deny($permissions, $resourceName, $resourceId);
     }
 
@@ -127,7 +136,8 @@ class LockProvider extends AbstractProvider {
      *
      * @return \BeatSwitch\Lock\Callers\CallerLock|\BeatSwitch\Lock\Roles\RoleLock|null
      */
-    protected function caller() {
+    protected function caller()
+    {
         if ($this->subject == 'user') {
             return $this->manager->caller($this->user);
         } elseif ($this->subject == 'role') {
@@ -142,10 +152,11 @@ class LockProvider extends AbstractProvider {
      * @return \BeatSwitch\Lock\Callers\CallerLock|\BeatSwitch\Lock\Roles\RoleLock
      * @throws \Exception
      */
-    protected function lock() {
+    protected function lock()
+    {
         if ( $this->subject == 'user' ) {
            return $this->manager->caller( $this->user );
-        } else if ( $this->subject == 'role' ) {
+        } elseif ( $this->subject == 'role' ) {
            return $this->manager->role( $this->role );
         } else {
             throw new \Exception("Caller not allowed: $this->subject");
@@ -159,14 +170,15 @@ class LockProvider extends AbstractProvider {
      *
      * @return Collection
      */
-    protected function getUserPermissions($user) {
+    protected function getUserPermissions($user)
+    {
         $permissions = $this->manager->getDriver()->getCallerPermissions($user);
         $collection = new Collection();
-        foreach ($permissions as $lockPermission) {
-            if ($lockPermission instanceof Restriction) {
+        foreach ($permissions as $permission) {
+            if ($permission instanceof Restriction) {
                 continue;
             }
-            $collection->allow($lockPermission->getAction(), $lockPermission->getResourceType(), $lockPermission->getResourceId());
+            $collection->allow($permission->getAction(), $permission->getResourceType(), $permission->getResourceId());
         }
         return $collection;
     }
@@ -178,15 +190,16 @@ class LockProvider extends AbstractProvider {
      *
      * @return Collection
      */
-    protected function getRolePermissions($roleName) {
+    protected function getRolePermissions($roleName)
+    {
         $role = new SimpleRole($roleName);
         $permissions = $this->manager->getDriver()->getRolePermissions($role);
         $collection = new Collection();
-        foreach ($permissions as $lockPermission) {
-            if ($lockPermission instanceof Restriction) {
+        foreach ($permissions as $permission) {
+            if ($permission instanceof Restriction) {
                 continue;
             }
-            $collection->allow($lockPermission->getAction(), $lockPermission->getResourceType(), $lockPermission->getResourceId());
+            $collection->allow($permission->getAction(), $permission->getResourceType(), $permission->getResourceId());
         }
         return $collection;
     }

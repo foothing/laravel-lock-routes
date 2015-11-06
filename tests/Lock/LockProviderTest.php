@@ -2,34 +2,34 @@
 
 use Tests\Foothing\Wrappr\Mocks\User;
 
-class LockProviderTest extends \Orchestra\Testbench\TestCase {
-
+class LockProviderTest extends \Orchestra\Testbench\TestCase
+{
     protected $provider;
 
     protected $driver;
 
-	protected function getEnvironmentSetUp($app) {
-		$app['config']->set('database.default', 'testbench');
-		$app['config']->set('database.connections.testbench', [
-			'driver'   	=> 'mysql',
-			'host' 		=> 'localhost',
-			'database' 	=> 'routes',
-			'username'	=> 'routes',
-			'password'	=> 'routes',
-			'charset'   => 'utf8',
-			'collation' => 'utf8_unicode_ci',
-			'prefix'    => '',
-			'strict'    => false,
-		]);
-	}
+    protected function getEnvironmentSetUp($app) {
+        $app['config']->set('database.default', 'testbench');
+        $app['config']->set('database.connections.testbench', [
+            'driver'    => 'mysql',
+            'host'      => 'localhost',
+            'database'  => 'routes',
+            'username'  => 'routes',
+            'password'  => 'routes',
+            'charset'   => 'utf8',
+            'collation' => 'utf8_unicode_ci',
+            'prefix'    => '',
+            'strict'    => false,
+        ]);
+    }
 
-	protected function getPackageProviders($app) {
-		$app['config']->set('lock.driver', 'database');
-		$app['config']->set('lock.table', 'lock_permissions');
-		$app['config']->set('wrappr.permissionsProvider', 'Foothing\Wrappr\Lock\LockProvider');
-		$app['config']->set('wrappr.usersProvider', 'Foothing\Wrappr\Providers\Users\DefaultProvider');
-		return ['Foothing\Wrappr\WrapprServiceProvider', 'BeatSwitch\Lock\Integrations\Laravel\LockServiceProvider'];
-	}
+    protected function getPackageProviders($app) {
+        $app['config']->set('lock.driver', 'database');
+        $app['config']->set('lock.table', 'lock_permissions');
+        $app['config']->set('wrappr.permissionsProvider', 'Foothing\Wrappr\Lock\LockProvider');
+        $app['config']->set('wrappr.usersProvider', 'Foothing\Wrappr\Providers\Users\DefaultProvider');
+        return ['Foothing\Wrappr\WrapprServiceProvider', 'BeatSwitch\Lock\Integrations\Laravel\LockServiceProvider'];
+    }
 
     public function setUp() {
         parent::setUp();
@@ -41,34 +41,50 @@ class LockProviderTest extends \Orchestra\Testbench\TestCase {
         \DB::table('lock_permissions')->truncate();
     }
 
-    function test_grant_is_not_necessary() { }
+    public function testGrantUser()
+    {
+        \Mockery::mock('BeatSwitch\Lock\Callers\CallerLock')->shouldReceive('allow');
+        $this->provider->user(new User())->grant('pwn');
+    }
 
-    function testCheck() {
+    public function testGrantRole()
+    {
+        \Mockery::mock('BeatSwitch\Lock\Roles\RoleLock')->shouldReceive('allow');
+        $this->provider->role('admin')->grant('pwn');
+    }
+
+    public function testCheck()
+    {
         \Mockery::mock('BeatSwitch\Lock\Callers\CallerLock')->shouldReceive('can');
         $this->provider->check(new User(), 'drink', 'beer', 1);
     }
 
-    function testUserRevoke() {
+    public function testUserRevoke()
+    {
         \Mockery::mock('BeatSwitch\Lock\Callers\CallerLock')->shouldReceive('deny');
         $this->provider->user(new User())->revoke('drink', 'beer', 1);
     }
 
-    function testRoleRevoke() {
+    public function testRoleRevoke()
+    {
         \Mockery::mock('BeatSwitch\Lock\Roles\RoleLock')->shouldReceive('deny');
         $this->provider->user(new User())->revoke('drink', 'beer', 1);
     }
 
-    function testUserCan() {
+    public function testUserCan()
+    {
         \Mockery::mock('BeatSwitch\Lock\Callers\CallerLock')->shouldReceive('can');
         $this->provider->user(new User())->can('drink', 'beer', 1);
     }
 
-    function testRoleCan() {
+    public function testRoleCan()
+    {
         \Mockery::mock('BeatSwitch\Lock\Roles\RoleLock')->shouldReceive('can');
         $this->provider->role('admin')->can('drink', 'beer', 1);
     }
 
-    function testUserAll() {
+    public function testUserAll()
+    {
         $user = new User();
         $this->provider->user($user)->revoke('drink', 'beer', 1);
         $this->provider->user($user)->grant('drink', 'beer', 1);
@@ -77,7 +93,8 @@ class LockProviderTest extends \Orchestra\Testbench\TestCase {
         $this->assertEquals(0, $this->provider->user($user)->all()->countAllowed());
     }
 
-    function testRoleAll() {
+    public function testRoleAll()
+    {
         $this->provider->role('admin')->revoke('drink', 'beer', 1);
         $this->provider->role('admin')->grant('drink', 'beer', 1);
         $this->assertEquals(1, $this->provider->role('admin')->all()->countAllowed());
@@ -85,13 +102,15 @@ class LockProviderTest extends \Orchestra\Testbench\TestCase {
         $this->assertEquals(0, $this->provider->role('admin')->all()->countAllowed());
     }
 
-    function testUserAllReturnsEmpty() {
+    public function testUserAllReturnsEmpty()
+    {
         $user = new User();
         $permissions = $this->provider->user($user)->all();
         $this->assertEquals(0, $permissions->countAllowed());
     }
 
-    function testUserAllReturnsAllowed() {
+    public function testUserAllReturnsAllowed()
+    {
         $user = new User();
         $this->provider->user($user)->grant('drink', 'beer', 1);
         $this->provider->user($user)->grant('drink', 'coffee');
@@ -107,12 +126,13 @@ class LockProviderTest extends \Orchestra\Testbench\TestCase {
         $this->assertEquals('eat', $permissions->getAllowed(2)->name);
     }
 
-    function testRoleAllReturnsEmpty() {
+    public function testRoleAllReturnsEmpty()
+    {
         $permissions = $this->provider->role('admin')->all();
         $this->assertEquals(0, $permissions->countAllowed());
     }
 
-    function testRoleAllReturnsAllowed() {
+    public function testRoleAllReturnsAllowed() {
         $this->provider->role('admin')->grant('drink', 'beer', 1);
         $this->provider->role('admin')->grant('drink', 'coffee');
         $this->provider->role('admin')->grant('eat');
@@ -127,7 +147,8 @@ class LockProviderTest extends \Orchestra\Testbench\TestCase {
         $this->assertEquals('eat', $permissions->getAllowed(2)->name);
     }
 
-	public function tearDown() {
-		\Mockery::close();
-	}
+    public function tearDown()
+    {
+        \Mockery::close();
+    }
 }
