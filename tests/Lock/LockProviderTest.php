@@ -38,7 +38,6 @@ class LockProviderTest extends \Orchestra\Testbench\TestCase
             '--realpath'	=> 	realpath(__DIR__ . '/../../vendor/beatswitch/lock-laravel/src/migrations')
         ]);
         $this->provider = $this->app->make('Foothing\Wrappr\Providers\Permissions\PermissionProviderInterface');
-        \DB::table('lock_permissions')->truncate();
     }
 
     public function testGrantUser()
@@ -150,5 +149,6 @@ class LockProviderTest extends \Orchestra\Testbench\TestCase
     public function tearDown()
     {
         \Mockery::close();
+        \DB::table('lock_permissions')->truncate();
     }
 }
