@@ -10,11 +10,11 @@
 	"keywords": ["laravel", "permissions", "routes", "lock"],
 	"license": "MIT",
     "require": {
-        "php": ">=5.4.0",
+        "php": ">=5.5.9",
 		"illuminate/auth": "~5.0",
 		"illuminate/database": "~5.0",
 		"beatswitch/lock-laravel": "0.4.*",
-		"foothing/laravel-wrappr": "0.*"
+		"foothing/laravel-wrappr": "0.4.*"
     },
 	"require-dev": {
 		"orchestra/testbench": "~3.0",
